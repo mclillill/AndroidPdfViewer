@@ -100,10 +100,7 @@ class RenderingHandler extends Handler {
         Bitmap render;
         try {
             render = Bitmap.createBitmap(w, h, renderingTask.bestQuality ? Bitmap.Config.ARGB_8888 : Bitmap.Config.RGB_565);
-        } catch (IllegalArgumentException e) {
-            Log.e(TAG, "Cannot create bitmap", e);
-            return null;
-        catch(OutOfMemoryError e){
+        } catch (IllegalArgumentException | OutOfMemoryError e) {
             Log.e(TAG, "Cannot create bitmap. Out of memory.", e);
             return null;
         }
