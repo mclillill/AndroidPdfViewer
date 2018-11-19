@@ -103,6 +103,9 @@ class RenderingHandler extends Handler {
         } catch (IllegalArgumentException e) {
             Log.e(TAG, "Cannot create bitmap", e);
             return null;
+        catch(OutOfMemoryError e){
+            Log.e(TAG, "Cannot create bitmap. Out of memory.", e);
+            return null;
         }
         calculateBounds(w, h, renderingTask.bounds);
 
