@@ -55,6 +55,7 @@ import com.github.barteksc.pdfviewer.source.FileSource;
 import com.github.barteksc.pdfviewer.source.InputStreamSource;
 import com.github.barteksc.pdfviewer.source.UriSource;
 import com.github.barteksc.pdfviewer.util.Constants;
+import com.github.barteksc.pdfviewer.util.Debouncer;
 import com.github.barteksc.pdfviewer.util.FitPolicy;
 import com.github.barteksc.pdfviewer.util.MathUtils;
 import com.github.barteksc.pdfviewer.util.Util;
@@ -68,6 +69,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * It supports animations, zoom, cache, and swipe.
@@ -538,13 +540,6 @@ public class PDFView extends RelativeLayout {
             canvas.setDrawFilter(antialiasFilter);
         }
 
-        Drawable bg = getBackground();
-        if (bg == null) {
-            canvas.drawColor(Color.WHITE);
-        } else {
-            bg.draw(canvas);
-        }
-
         if (recycled) {
             return;
         }
@@ -573,12 +568,12 @@ public class PDFView extends RelativeLayout {
             }
         }
 
-        for (Integer page : onDrawPagesNums) {
-            drawWithListener(canvas, page, callbacks.getOnDrawAll());
-        }
-        onDrawPagesNums.clear();
+       for (Integer page : onDrawPagesNums) {
+           drawWithListener(canvas, page, callbacks.getOnDrawAll());
+       }
+       onDrawPagesNums.clear();
 
-        drawWithListener(canvas, currentPage, callbacks.getOnDraw());
+       drawWithListener(canvas, currentPage, callbacks.getOnDraw());
 
         // Restores the canvas position
         canvas.translate(-currentXOffset, -currentYOffset);
@@ -630,7 +625,7 @@ public class PDFView extends RelativeLayout {
             float maxHeight = pdfFile.getMaxPageHeight();
             localTranslationY = toCurrentScale(maxHeight - size.getHeight()) / 2;
         }
-        canvas.translate(localTranslationX, localTranslationY);
+
 
         Rect srcRect = new Rect(0, 0, renderedBitmap.getWidth(),
                 renderedBitmap.getHeight());
@@ -652,10 +647,10 @@ public class PDFView extends RelativeLayout {
         float translationY = currentYOffset + localTranslationY;
         if (translationX + dstRect.left >= getWidth() || translationX + dstRect.right <= 0 ||
                 translationY + dstRect.top >= getHeight() || translationY + dstRect.bottom <= 0) {
-            canvas.translate(-localTranslationX, -localTranslationY);
             return;
         }
 
+        canvas.translate(localTranslationX, localTranslationY);
         canvas.drawBitmap(renderedBitmap, srcRect, dstRect, paint);
 
         if (Constants.DEBUG_MODE) {
@@ -745,8 +740,15 @@ public class PDFView extends RelativeLayout {
         } else {
             cacheManager.cachePart(part);
         }
-        redraw();
+
+        debouncer.debounce(Void.class, new Runnable() {
+            @Override public void run() {
+                redraw();
+            }
+        }, 80, TimeUnit.MILLISECONDS);
     }
+
+    final Debouncer debouncer = new Debouncer();
 
     public void moveTo(float offsetX, float offsetY) {
         moveTo(offsetX, offsetY, true);
