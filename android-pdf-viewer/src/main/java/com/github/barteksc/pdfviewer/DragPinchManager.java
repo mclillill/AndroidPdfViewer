@@ -168,8 +168,13 @@ class DragPinchManager implements GestureDetector.OnGestureListener, GestureDete
         return false;
     }
 
+    private MotionEvent scrollEvent1;
+
     @Override
     public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+        if(!scrolling){
+            scrollEvent1 = e1;
+        }
         scrolling = true;
         if (pdfView.isZooming() || pdfView.isSwipeEnabled()) {
             pdfView.moveRelativeTo(-distanceX, -distanceY);
@@ -181,11 +186,17 @@ class DragPinchManager implements GestureDetector.OnGestureListener, GestureDete
     }
 
     private void onScrollEnd(MotionEvent event) {
-        if(pdfView.getZoom() == pdfView.getMinZoom()){
+        if(scrollEvent1 != null
+                && pdfView.getZoom() == pdfView.getMinZoom()
+                && calculateScrollDistance(event) <= 50){
             onSingleTapConfirmed(event);
         }
         pdfView.loadPages();
         hideHandle();
+    }
+
+    private double calculateScrollDistance(MotionEvent event) {
+       return Math.sqrt(Math.pow(event.getX() - scrollEvent1.getX(),2)+ Math.pow(event.getY() - scrollEvent1.getY(),2));
     }
 
     @Override
