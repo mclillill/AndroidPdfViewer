@@ -181,6 +181,9 @@ class DragPinchManager implements GestureDetector.OnGestureListener, GestureDete
     }
 
     private void onScrollEnd(MotionEvent event) {
+        if(pdfView.getZoom() == pdfView.getMinZoom()){
+            onSingleTapConfirmed(event);
+        }
         pdfView.loadPages();
         hideHandle();
     }
