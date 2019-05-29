@@ -552,7 +552,10 @@ public class PDFView extends RelativeLayout {
         float currentYOffset = this.currentYOffset;
         canvas.translate(currentXOffset, currentYOffset);
 
-        if(renderingHandler.hasMessages(RenderingHandler.MSG_RENDER_TASK) || dragPinchManager.scrolling){
+        //Render thumbs if rendering of tiles not finished or some animation or scrolling is happening
+        if(renderingHandler.hasMessages(RenderingHandler.MSG_RENDER_TASK)
+                || dragPinchManager.scrolling
+                || animationManager.animationRunning()){
             // Draws thumbnails
             for (PagePart part : cacheManager.getThumbnails()) {
                 drawPart(canvas, part);
@@ -679,6 +682,7 @@ public class PDFView extends RelativeLayout {
         cacheManager.makeANewSet();
 
         pagesLoader.loadPages();
+        //Redraw only if rendering finished or if we are scrolling
         if(!renderingHandler.hasMessages(RenderingHandler.MSG_RENDER_TASK) || dragPinchManager.scrolling){
             redraw();
         }
@@ -744,6 +748,7 @@ public class PDFView extends RelativeLayout {
             cacheManager.cachePart(part);
         }
 
+        //Redraw only if rendering finished or if we are scrolling
         if(!renderingHandler.hasMessages(RenderingHandler.MSG_RENDER_TASK) || dragPinchManager.scrolling){
             redraw();
         }

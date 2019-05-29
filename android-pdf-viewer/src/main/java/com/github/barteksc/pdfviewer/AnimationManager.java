@@ -41,6 +41,11 @@ class AnimationManager {
 
     private boolean flinging = false;
 
+    public boolean animationRunning(){
+        return animation != null
+            || flinging;
+    }
+
     public AnimationManager(PDFView pdfView) {
         this.pdfView = pdfView;
         scroller = new OverScroller(pdfView.getContext());
