@@ -553,7 +553,7 @@ public class PDFView extends RelativeLayout {
         canvas.translate(currentXOffset, currentYOffset);
 
         //Render thumbs if rendering of tiles not finished or some animation or scrolling is happening
-        if(renderingHandler.hasMessages(RenderingHandler.MSG_RENDER_TASK)
+        if((renderingHandler != null && renderingHandler.hasMessages(RenderingHandler.MSG_RENDER_TASK))
                 || dragPinchManager.scrolling
                 || animationManager.animationRunning()){
             // Draws thumbnails
@@ -749,7 +749,8 @@ public class PDFView extends RelativeLayout {
         }
 
         //Redraw only if rendering finished or if we are scrolling
-        if(!renderingHandler.hasMessages(RenderingHandler.MSG_RENDER_TASK) || dragPinchManager.scrolling){
+        if((renderingHandler != null && !renderingHandler.hasMessages(RenderingHandler.MSG_RENDER_TASK)) 
+            || dragPinchManager.scrolling){
             redraw();
         }
     }
