@@ -42,7 +42,7 @@ class DragPinchManager implements GestureDetector.OnGestureListener, GestureDete
     private GestureDetector gestureDetector;
     private ScaleGestureDetector scaleGestureDetector;
 
-    private boolean scrolling = false;
+    public boolean scrolling = false;
     private boolean scaling = false;
     private boolean enabled = false;
 

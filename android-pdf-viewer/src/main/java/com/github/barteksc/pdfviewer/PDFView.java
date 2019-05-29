@@ -55,7 +55,6 @@ import com.github.barteksc.pdfviewer.source.FileSource;
 import com.github.barteksc.pdfviewer.source.InputStreamSource;
 import com.github.barteksc.pdfviewer.source.UriSource;
 import com.github.barteksc.pdfviewer.util.Constants;
-import com.github.barteksc.pdfviewer.util.Debouncer;
 import com.github.barteksc.pdfviewer.util.FitPolicy;
 import com.github.barteksc.pdfviewer.util.MathUtils;
 import com.github.barteksc.pdfviewer.util.Util;
@@ -553,27 +552,29 @@ public class PDFView extends RelativeLayout {
         float currentYOffset = this.currentYOffset;
         canvas.translate(currentXOffset, currentYOffset);
 
-        // Draws thumbnails
-        for (PagePart part : cacheManager.getThumbnails()) {
-            drawPart(canvas, part);
-
-        }
-
-        // Draws parts
-        for (PagePart part : cacheManager.getPageParts()) {
-            drawPart(canvas, part);
-            if (callbacks.getOnDrawAll() != null
-                    && !onDrawPagesNums.contains(part.getPage())) {
-                onDrawPagesNums.add(part.getPage());
+        if(renderingHandler.hasMessages(RenderingHandler.MSG_RENDER_TASK) || dragPinchManager.scrolling){
+            // Draws thumbnails
+            for (PagePart part : cacheManager.getThumbnails()) {
+                drawPart(canvas, part);
+            }
+        }else{
+            // Draws parts
+            List<PagePart> pageParts = cacheManager.getPageParts();
+            for (PagePart part : pageParts) {
+                drawPart(canvas, part);
+                if (callbacks.getOnDrawAll() != null
+                        && !onDrawPagesNums.contains(part.getPage())) {
+                    onDrawPagesNums.add(part.getPage());
+                }
             }
         }
 
-       for (Integer page : onDrawPagesNums) {
-           drawWithListener(canvas, page, callbacks.getOnDrawAll());
-       }
-       onDrawPagesNums.clear();
+        for (Integer page : onDrawPagesNums) {
+            drawWithListener(canvas, page, callbacks.getOnDrawAll());
+        }
+        onDrawPagesNums.clear();
 
-       drawWithListener(canvas, currentPage, callbacks.getOnDraw());
+        drawWithListener(canvas, currentPage, callbacks.getOnDraw());
 
         // Restores the canvas position
         canvas.translate(-currentXOffset, -currentYOffset);
@@ -678,7 +679,9 @@ public class PDFView extends RelativeLayout {
         cacheManager.makeANewSet();
 
         pagesLoader.loadPages();
-        redraw();
+        if(!renderingHandler.hasMessages(RenderingHandler.MSG_RENDER_TASK) || dragPinchManager.scrolling){
+            redraw();
+        }
     }
 
     /** Called when the PDF is loaded */
@@ -741,14 +744,10 @@ public class PDFView extends RelativeLayout {
             cacheManager.cachePart(part);
         }
 
-        debouncer.debounce(Void.class, new Runnable() {
-            @Override public void run() {
-                redraw();
-            }
-        }, 80, TimeUnit.MILLISECONDS);
+        if(!renderingHandler.hasMessages(RenderingHandler.MSG_RENDER_TASK) || dragPinchManager.scrolling){
+            redraw();
+        }
     }
-
-    final Debouncer debouncer = new Debouncer();
 
     public void moveTo(float offsetX, float offsetY) {
         moveTo(offsetX, offsetY, true);
