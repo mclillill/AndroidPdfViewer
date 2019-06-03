@@ -49,9 +49,6 @@ class CacheManager {
 
     public void cachePart(PagePart part) {
         synchronized (passiveActiveLock) {
-            // If cache too big, remove and recycle
-            makeAFreeSpace();
-
             // Then add part
             activeCache.offer(part);
         }
@@ -64,19 +61,24 @@ class CacheManager {
         }
     }
 
-    private void makeAFreeSpace() {
-        synchronized (passiveActiveLock) {
-            while ((activeCache.size() + passiveCache.size()) >= CACHE_SIZE &&
-                    !passiveCache.isEmpty()) {
-                PagePart part = passiveCache.poll();
-                part.getRenderedBitmap().recycle();
-            }
+    public void makeAFreeSpaceAsync() {
+        (new Runnable() {
+            @Override
+            public void run() {
+                synchronized (passiveActiveLock) {
+                    while ((activeCache.size() + passiveCache.size()) >= CACHE_SIZE &&
+                            !passiveCache.isEmpty()) {
+                        PagePart part = passiveCache.poll();
+                        part.getRenderedBitmap().recycle();
+                    }
 
-            while ((activeCache.size() + passiveCache.size()) >= CACHE_SIZE &&
-                    !activeCache.isEmpty()) {
-                activeCache.poll().getRenderedBitmap().recycle();
+                    while ((activeCache.size() + passiveCache.size()) >= CACHE_SIZE &&
+                            !activeCache.isEmpty()) {
+                        activeCache.poll().getRenderedBitmap().recycle();
+                    }
+                }
             }
-        }
+        }).run();
     }
 
     public void cacheThumbnail(PagePart part) {

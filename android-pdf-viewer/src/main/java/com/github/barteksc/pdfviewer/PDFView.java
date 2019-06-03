@@ -25,7 +25,6 @@ import android.graphics.PaintFlagsDrawFilter;
 import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.RectF;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.HandlerThread;
@@ -68,7 +67,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * It supports animations, zoom, cache, and swipe.
@@ -499,6 +497,9 @@ public class PDFView extends RelativeLayout {
         return false;
     }
 
+    private long lastCopy = 0;
+    private List<PagePart> pageParts;
+
     @Override
     protected void onDraw(Canvas canvas) {
         if (isInEditMode()) {
@@ -552,24 +553,25 @@ public class PDFView extends RelativeLayout {
         float currentYOffset = this.currentYOffset;
         canvas.translate(currentXOffset, currentYOffset);
 
-        //Render thumbs if rendering of tiles not finished or some animation or scrolling is happening
-        if((renderingHandler != null && renderingHandler.hasMessages(RenderingHandler.MSG_RENDER_TASK))
-                || dragPinchManager.scrolling
-                || animationManager.animationRunning()){
-            // Draws thumbnails
-            for (PagePart part : cacheManager.getThumbnails()) {
-                drawPart(canvas, part);
-            }
-        }else{
-            // Draws parts
-            List<PagePart> pageParts = cacheManager.getPageParts();
+        // Draws thumbnails
+        for (PagePart part : cacheManager.getThumbnails()) {
+            drawPart(canvas, part);
+        }
+        if((renderingHandler != null
+                && !renderingHandler.hasMessages(RenderingHandler.MSG_RENDER_TASK))
+                || ((System.currentTimeMillis() - lastCopy) > 500)) {
+            lastCopy = System.currentTimeMillis();
+            pageParts = cacheManager.getPageParts();
+        }
+        if(pageParts != null){
             for (PagePart part : pageParts) {
                 drawPart(canvas, part);
-                if (callbacks.getOnDrawAll() != null
-                        && !onDrawPagesNums.contains(part.getPage())) {
-                    onDrawPagesNums.add(part.getPage());
-                }
             }
+        }
+
+        if(renderingHandler != null && !renderingHandler.hasMessages(RenderingHandler.MSG_RENDER_TASK)){
+            // If cache too big, remove and recycle
+            cacheManager.makeAFreeSpaceAsync();
         }
 
         for (Integer page : onDrawPagesNums) {
